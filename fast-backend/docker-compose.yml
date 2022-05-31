@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  userv_backend:
+    build: .
+    container_name: userv_backend
+    ports:
+      - "80:80"
+    depends_on:
+      - "backend_db"
+      - "rabbitmq"
+    environment:
+      - MAX_WORKERS=1
+      - REDIS_SERVICE=backend_db
+      - SERVICE_NAME=Backend Microservice
+      - ROOT_PATH=/
+      - SECRET_KEY=e9629f658c37859ab9d74680a3480b99265c7d4c89224280cb44a255c320661f
+
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    container_name: "rabbitmq"
+    restart: "always"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  backend_db:
+    container_name: "backend_db"
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+

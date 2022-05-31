@@ -1,0 +1,61 @@
+version: "3.7"
+
+services:
+  frontend:
+    image: daryldocker/zedsen-frontend:main
+    container_name: zedsen-frontend
+    build:
+      context: ./quasar-frontend
+    ports:
+      - 8080:8080
+    volumes:
+      - ./quasar-frontend:/frontend
+      - frontend_dist:/frontend/dist/spa
+    depends_on:
+      - backend
+  backend:
+    image: daryldocker/zedsen-backend:main
+    container_name: zedsen-backend
+    build:
+      context: ./fast-backend
+    ports:
+      - 8001:80
+    depends_on:
+      - backend_db
+      - rabbitmq
+    environment:
+      - ROOT_PATH=/fast-backend
+      - MAX_WORKERS=1
+      - REDIS_SERVICE=backend_db
+      - SERVICE_NAME=Backend Microservice
+      - SECRET_KEY=e9629f658c37859ab9d74680a3480b99265c7d4c89224280cb44a255c320661f
+
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    container_name: "rabbitmq"
+    hostname: "rabbitmq"
+    restart: "always"
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+  # Storage
+  backend_db:
+    container_name: "backend_db"
+    image: "redis:alpine"
+
+  # Proxy
+  nginx:
+    image: opentracing/nginx-opentracing
+    container_name: nginx
+    depends_on:
+      - frontend
+      - backend
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - 80:80
+
+volumes:
+  frontend_dist:
+

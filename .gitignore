@@ -1,0 +1,14 @@
+*.pyc
+__pycache__
+**/env
+**/staticfiles
+**/.datadumps
+**/.credentials
+**/mediafiles
+*.code-workspace
+.DS_Store
+.env.db
+.env.dev
+.env.prod
+.env.prod.db
+db-data
