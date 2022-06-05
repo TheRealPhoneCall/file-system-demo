@@ -21,9 +21,6 @@
                 color="black"
                 icon="o_cloud_upload"
                 @click="onUpload(type.id)"
-                :disable="
-                  !permissions.includes('upload') || loading[type.id]
-                "
                 flat
                 :dense="!$q.screen.gt.xs"
                 no-caps
@@ -72,22 +69,22 @@
         </template>
         <template v-slot:body-cell-fileName="props">
           <q-td :props="props" :class="selectedClass(props.row.id)">
-            {{props.row.fileName}}
+            {{ props.row.name }}
           </q-td>
         </template>
         <template v-slot:body-cell-fileCreated="props">
           <q-td :props="props" :class="selectedClass(props.row.id)">
-            {{props.row.fileCreated}}
+            {{ props.row.created | formatDate }}
           </q-td>
         </template>
-        <template v-slot:body-cell-fileUpdated="props">
+        <!-- <template v-slot:body-cell-fileUpdated="props">
           <q-td :props="props" :class="selectedClass(props.row.id)">
             {{props.row.fileUpdated}}
           </q-td>
-        </template>
+        </template> -->
         <template v-slot:body-cell-fileSize="props">
           <q-td :props="props" :class="selectedClass(props.row.id)">
-            {{props.row.fileSize}}
+            {{ formatBytes(props.row.size) }}
           </q-td>
         </template>
         <template v-slot:body-cell-fileOp="props">
@@ -99,9 +96,10 @@
                   size="0.55rem"
                   flat
                   dense
-                  @click="openURL(props.row.webContentLink)"
+                  @click="openURL(`${restUrl}/file/download/${props.row.name}`)"
                   :disable="!permissions.includes('download')"
                 />
+                  <!-- @click="downloadFile(props.row.name)" -->
                 <q-btn
                   icon="fas fa-trash-alt"
                   size="0.55rem"
@@ -146,7 +144,7 @@
     <q-uploader
       v-show="false"
       ref="uploader"
-      :factory="factoryFn"
+      :factory="addFiles"
       multiple
       batch
       auto-upload
@@ -201,7 +199,6 @@ export default {
     active: null,
     percent: 0,
     config: {},
-    // loading: false,
     activeHash: null,
     activeHover: null,
     metadata: {},
@@ -227,13 +224,13 @@ export default {
         field: 'fileCreated',
         sortable: false
       },
-      {
-        name: 'fileUpdated',
-        align: 'center',
-        label: 'Updated',
-        field: 'fileUpdated',
-        sortable: false
-      },
+      // {
+      //   name: 'fileUpdated',
+      //   align: 'center',
+      //   label: 'Updated',
+      //   field: 'fileUpdated',
+      //   sortable: false
+      // },
       {
         name: 'fileSize',
         align: 'center',
@@ -263,60 +260,16 @@ export default {
     ...mapGetters(['baseUrl', 'restUrl'])
   },
   methods: {
-    ...mapActions(['postRequest', 'getRequest']),
+    ...mapActions(['postRequest', 'getRequest', 'deleteRequest']),
     openURL,
     jszip,
+    formatBytes,
     typeName2Id (name) {
       const match = this.fileTypes.find((t) => t.name.includes(name))
       if (match) return match.id
       console.log(this.fileTypes)
       console.error("[typeName2Id] can't find match for ", name, '; using A_1')
       return 'A_1'
-    },
-    async factoryFn (files) {
-      console.log('files: ', files)
-      this.uploadingFiles = files
-      this.uploading = true
-      // let counter = 0
-
-      this.setLoading(this.active, true)
-
-      for (const file of files) {
-        const fd = new FormData()
-        fd.append('files_upload', file)
-
-        const url = `${this.restUrl}/soamgr/files/create/`
-        const headers = { 'X-Requested-With': 'XMLHttpRequest' }
-        const formFields = [
-          { name: 'data', value: '---' }
-        ]
-        // const fieldName = 'files_upload'
-
-        formFields.map((fld) => {
-          fd.append(fld.name, fld.value)
-        })
-
-        const payload = {
-          url,
-          headers,
-          body: fd
-        }
-
-        await this.postRequest(payload)
-          .then((res) => {
-            file.done = true
-          })
-          .catch((err) => {
-            // this.onFailed(err)
-            console.error('fileupload: ', err)
-            file.failed = true
-            file.error = err.response.data || err.message
-          })
-          .finally(() => {
-            this.uploadingFiles = [...files]
-          })
-      }
-      await this.transformFiles()
     },
     selectedClass (rowId) {
       return {
@@ -387,70 +340,88 @@ export default {
       this.stop()
     },
     async onFailed (info) {
-      this.$q.dialog({
-        title: 'File Upload Error',
-        message: (info.response ? info.response.data : null) || info.message,
-        persistent: true
-      })
+      this.mixinNotify(
+        'Error!',
+        'negative',
+        (info.response ? info.response.data : null) || info.message
+      )
       await this.transformFiles()
       this.stop()
     },
     onUpload (type) {
       console.log('onUpload for ', type)
-      // const csrftoken = this.$cookies.get('X-CSRFToken')
-      const csrftoken = "173hskjckllsld"
       this.config = {
-        url: `${this.restUrl}/soamgr/files/create/`,
-        headers: [
-          { name: 'X-CSRFToken', value: csrftoken },
-          { name: 'X-Requested-With', value: 'XMLHttpRequest' }
-        ],
+        url: `${this.restUrl}/files/create`,
         formFields: [{ name: 'data', value: '---' }],
         fieldName: 'files_upload'
       }
       this.$refs.uploader.pickFiles()
       this.active = type
     },
-    async fetchFiles () {
-      // FIXME: replace logic
-      // try {
-      //   const { gqlUrl, gqlFilesQuery, orderType, orderId } = this
-      //   let query
-      //   if (this.orderType === 'supportingDocs') {
-      //     if (this.show[0] === 'A_1') {
-      //       query = gqlFilesQuery
-      //         .replace('<adviserId>', `${orderId}`)
-      //         .replace('<businessId>', '')
-      //         .replace('<dgroupId>', '')
-      //     } else if (this.show[0] === 'A_2') {
-      //       query = gqlFilesQuery
-      //         .replace('<adviserId>', '')
-      //         .replace('<businessId>', `${orderId}`)
-      //         .replace('<dgroupId>', '')
-      //     } else if (this.show[0] === 'A_3') {
-      //       query = gqlFilesQuery
-      //         .replace('<adviserId>', '')
-      //         .replace('<businessId>', '')
-      //         .replace('<dgroupId>', `${orderId}`)
-      //     }
-      //   } else {
-      //     query = gqlFilesQuery.replace('[ID_HERE]', `"${orderId}"`)
-      //   }
-      //   const response = await this.postRequest({
-      //     url: gqlUrl,
-      //     body: { query }
-      //   })
+    async addFiles (files) {
+      console.log('files: ', files)
+      this.uploadingFiles = files
+      this.uploading = true
 
-      //   console.log('gql data:', response)
-      //   const data = response.data.data
-      //   const files =
-      //     orderType === 'supportingDocs'
-      //       ? data[orderType]
-      //       : data[orderType]['orderFiles']
-      //   return files
-      // } catch (error) {
-      //   throw error
-      // }
+      for (const file of files) {
+        console.log(file)
+        const fileData = {
+          type: file.type,
+          name: file.name,
+          created: file.lastModified,
+          size: file.size
+        }
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('data', JSON.stringify(fileData))
+
+        const payload = {
+          url: `${this.baseUrl}/files`,
+          body: fd,
+          headers: {
+            // 'X-Requested-With': 'XMLHttpRequest',
+            // "Content-Type": "multipart/form-data"
+          }
+        }
+
+        console.log(payload)
+
+        await this.postRequest(payload)
+          .then((res) => {
+            file.done = true
+          })
+          .catch((err) => {
+            this.onFailed(err.message)
+            console.error('fileupload: ', err)
+            file.failed = true
+            file.error = err.response.data || err.message
+          })
+          .finally(() => {
+            this.uploadingFiles = [...files]
+          })
+      }
+      await this.fetchFiles()
+    },
+    async downloadFile (filename) {
+      await this.getRequest({ url: `${this.restUrl}/file/download/${filename}` })
+        .then(res => {
+          console.log(res)
+        })
+        .catch((err) => {
+          this.onFailed(err)
+          console.error('filedownload: ', err)
+        })
+    },
+    async fetchFiles () {
+      const url = `${this.baseUrl}/files`
+      await this.getRequest({ url })
+        .then(res => {
+          this.files['A_1'] = res.data
+        })
+        .catch((err) => {
+          this.onFailed(err)
+          console.error('filefetch: ', err)
+        })
     },
     async transformFiles () {
       // FIXME: replace logic
@@ -495,37 +466,40 @@ export default {
       // }
     },
     async deleteFile (row, type) {
-      // FIXME: replace logic
-      // this.$q
-      //   .dialog({
-      //     title: 'Confirm',
-      //     message: `Are you sure you want to delete this document from the folder?`,
-      //     cancel: true,
-      //     persistent: true
-      //   })
-      //   .onOk(async () => {
-      //     try {
-      //       const response = await this.postRequest({
-      //         url: `${this.restUrl}/soamgr/files/delete/`,
-      //         body: qs.stringify({ file_meta: JSON.stringify(row.meta) }),
-      //         headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      //       })
-      //       console.log('deletefile res: ', response)
-      //       this.$q.dialog({ title: 'Info', message: response.data })
-      //       const fileId = row.id
-      //       this.loadedFiles = this.loadedFiles.filter((t) => t !== fileId)
-      //       this.files = {
-      //         ...this.files,
-      //         [type]: this.files[type].filter((t) => t.id !== fileId)
-      //       }
-      //     } catch (error) {
-      //       console.log('deletefile err: ', error)
-      //       this.$q.dialog({
-      //         title: 'Error',
-      //         message: error.response.data
-      //       })
-      //     }
-      //   })
+      this.$q
+        .dialog({
+          title: 'Confirm',
+          message: `Are you sure you want to delete this file?`,
+          cancel: true,
+          persistent: true
+        })
+        .onOk(async () => {
+          try {
+            const fileId = row.id
+
+            const response = await this.deleteRequest({
+              url: `${this.restUrl}/files/${fileId}`
+            })
+            console.log('deletefile res: ', response)
+            this.mixinNotify(
+              'File deleted',
+              'positive',
+              response.data
+            )
+            // this.loadedFiles = this.loadedFiles.filter((t) => t !== fileId)
+            this.files = {
+              ...this.files,
+              [type]: this.files[type].filter((t) => t.id !== fileId)
+            }
+          } catch (error) {
+            console.log('deletefile err: ', error)
+            this.mixinNotify(
+              'Error!',
+              'negative',
+              error.message
+            )
+          }
+        })
     }
   },
   async created () {
@@ -541,14 +515,8 @@ export default {
       })
     }
 
-    await this.transformFiles()
+    await this.fetchFiles()
     this.ensureUnloading()
-    // FIXME: replace logic
-    // try {
-    //   this.selectedFiles = this.$bus.routes.soaView.uid || this.$bus.routes.drView.uid || null
-    //   this.selectedFiles = this.selectedFiles.split(',')
-    // } catch {}
-
     console.log('selectedFiles', this.selectedFiles)
   }
 }

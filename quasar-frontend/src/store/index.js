@@ -3,7 +3,8 @@ import Vuex from 'vuex'
 
 // import example from './module-example'
 
-import { urlApp } from 'src/data/constants'
+import { urlApp, token } from 'src/data/constants'
+import { rest } from './helpers/rest'
 
 Vue.use(Vuex)
 
@@ -23,11 +24,16 @@ export default function (/* { ssrContext } */) {
     },
     state: {
       baseUrl: urlApp,
+      token
     },
 
     getters: {
       baseUrl: (state) => state.baseUrl,
-      restUrl: (state) => state.baseUrl + "/api"
+      restUrl: (state) => state.baseUrl
+    },
+
+    actions: {
+      ...rest.actions
     },
 
     // enable strict mode (adds overhead!)

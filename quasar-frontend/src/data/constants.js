@@ -1,1 +1,2 @@
-export const urlApp = 'http://localhost:80'
+export const urlApp = 'http://localhost'
+export const token = require('./.secrets.json')['token']

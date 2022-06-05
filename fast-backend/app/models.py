@@ -1,21 +1,25 @@
-from typing import Optional
-from pydantic import BaseModel, validator
+from sqlalchemy import Column, Integer, String, Date
+from app.handlers import Base
+from pydantic import BaseModel, Field
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+Base = Base
 
 
-class TokenData(BaseModel):
-    username: Optional[str] = None
+class FileModel(Base):
+    __tablename__ = "files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String)
+    name = Column(String)
+    created = Column(Integer)
+    size = Column(Integer)
+    link = Column(String)
 
 
-class User(BaseModel):
-    username: str
-    full_name: Optional[str] = None
-    disabled: Optional[bool] = None
-
-
-class UserInDB(User):
-    hashed_password: str
+class FileData(BaseModel):
+    type: str = Field(min_length=1)
+    name: str = Field(min_length=1, max_length=1000)
+    created: str = Field(min_length=1, max_length=255)
+    size: int = Field(gt=0)
+    link: str = Field(min_length=1, max_length=5000)

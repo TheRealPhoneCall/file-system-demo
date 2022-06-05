@@ -75,3 +75,5 @@ watchgod==0.7
 websockets==10.0
 wrapt==1.14.1
 yarl==1.7.2
+sqlalchemy
+python-multipart

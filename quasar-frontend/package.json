@@ -16,8 +16,12 @@
     "core-js": "^3.6.5",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.0",
+    "lodash.clone": "^4.5.0",
     "moment-timezone": "^0.5.34",
-    "quasar": "^1.0.0"
+    "quasar": "^1.0.0",
+    "sanitize-html": "^2.7.0",
+    "vue-cookies": "^1.8.1",
+    "vue-moment": "^4.1.0"
   },
   "devDependencies": {
     "@quasar/app": "^2.0.0",
