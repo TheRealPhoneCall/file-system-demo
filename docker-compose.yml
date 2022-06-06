@@ -6,8 +6,6 @@ services:
     container_name: zedsen-frontend
     build:
       context: ./quasar-frontend
-    ports:
-      - 8080:8080
     volumes:
       - ./quasar-frontend:/frontend
       - frontend_dist:/frontend/dist/spa
@@ -19,7 +17,9 @@ services:
     build:
       context: ./fast-backend
     ports:
-      - 8001:80
+      - 8001:8001
+    volumes:
+      - ./fast-backend:/app
     depends_on:
       - backend_db
       - rabbitmq
@@ -29,6 +29,9 @@ services:
       - REDIS_SERVICE=backend_db
       - SERVICE_NAME=Backend Microservice
       - SECRET_KEY=e9629f658c37859ab9d74680a3480b99265c7d4c89224280cb44a255c320661f
+      - TOKEN=szdp79a2kz4wh12345uqu4sz6qeth8m3
+      - FILES_PATH=media
+      - PORT=8001
 
   rabbitmq:
     image: "rabbitmq:3-management"
@@ -53,6 +56,7 @@ services:
       - backend
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
+      - frontend_dist:/var/www/frontend
     ports:
       - 80:80
 

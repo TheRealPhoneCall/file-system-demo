@@ -3,7 +3,7 @@
     <div class="col">
       <files
         :file-types="[
-          { name: 'Files', id: 'A_1' }
+          { name: 'Media', id: 'A_1' }
         ]"
       />
     </div>

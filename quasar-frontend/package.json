@@ -8,7 +8,8 @@
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",
     "test": "echo \"No test specified\" && exit 0",
-    "dev": "export NODE_OPTIONS=--openssl-legacy-provider && quasar dev"
+    "dev": "export NODE_OPTIONS=--openssl-legacy-provider && quasar dev",
+    "build": "export NODE_OPTIONS=--openssl-legacy-provider && quasar build"
   },
   "dependencies": {
     "@quasar/extras": "^1.0.0",

@@ -29,7 +29,7 @@ export default function (/* { ssrContext } */) {
 
     getters: {
       baseUrl: (state) => state.baseUrl,
-      restUrl: (state) => state.baseUrl
+      restUrl: (state) => `${state.baseUrl}`
     },
 
     actions: {

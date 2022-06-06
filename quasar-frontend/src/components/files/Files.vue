@@ -6,6 +6,7 @@
         :data="files[type.id]"
         :columns="columns"
         :loading="loading[type.id]"
+        :grid="viewMode === 'grid'"
         row-key="name"
         wrap-cells
         style="height: 100%"
@@ -25,7 +26,7 @@
                 :dense="!$q.screen.gt.xs"
                 no-caps
               />
-              <q-btn
+              <!-- <q-btn
                 :label="$q.screen.gt.xs ? 'Download All' : null"
                 color="black"
                 icon="system_update_alt"
@@ -45,7 +46,22 @@
                 flat
                 :dense="!$q.screen.gt.xs"
                 no-caps
-              />
+              /> -->
+              <q-menu
+                auto-close
+                :offset="[0, 0]"
+                icon="settings"
+                :label="$q.screen.gt.xs ? 'Settings' : null"
+              >
+                <q-list style="min-width: 150px">
+                  <q-item clickable @click="viewMode = 'table'">
+                    <q-item-section>Table View</q-item-section>
+                  </q-item>
+                  <q-item clickable @click="viewMode = 'grid'">
+                    <q-item-section>Grid View</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
             </div>
             <div v-if="status[type.id]" class="row">
               {{ status[type.id] }}
@@ -57,11 +73,11 @@
           <q-td :props="props" auto-width :class="selectedClass(props.row.id)">
             <q-icon
               :name="
-                props.row.iconLink
-                  ? `img:${props.row.iconLink}`
+                props.row.link
+                  ? `img:${restUrl}/file/download/${props.row.name}`
                   : 'broken_image'
               "
-              size="0.95rem"
+              size="15rem"
               flat
               dense
             />
@@ -77,11 +93,6 @@
             {{ props.row.created | formatDate }}
           </q-td>
         </template>
-        <!-- <template v-slot:body-cell-fileUpdated="props">
-          <q-td :props="props" :class="selectedClass(props.row.id)">
-            {{props.row.fileUpdated}}
-          </q-td>
-        </template> -->
         <template v-slot:body-cell-fileSize="props">
           <q-td :props="props" :class="selectedClass(props.row.id)">
             {{ formatBytes(props.row.size) }}
@@ -99,7 +110,6 @@
                   @click="openURL(`${restUrl}/file/download/${props.row.name}`)"
                   :disable="!permissions.includes('download')"
                 />
-                  <!-- @click="downloadFile(props.row.name)" -->
                 <q-btn
                   icon="fas fa-trash-alt"
                   size="0.55rem"
@@ -194,7 +204,7 @@ export default {
   data: () => ({
     uploading: false,
     uploadingFiles: [],
-
+    viewMode: 'table',
     btnLoading: false,
     active: null,
     percent: 0,
@@ -224,13 +234,6 @@ export default {
         field: 'fileCreated',
         sortable: false
       },
-      // {
-      //   name: 'fileUpdated',
-      //   align: 'center',
-      //   label: 'Updated',
-      //   field: 'fileUpdated',
-      //   sortable: false
-      // },
       {
         name: 'fileSize',
         align: 'center',
@@ -336,7 +339,6 @@ export default {
       }, 2000)
     },
     async onUploaded () {
-      await this.transformFiles()
       this.stop()
     },
     async onFailed (info) {
@@ -345,7 +347,6 @@ export default {
         'negative',
         (info.response ? info.response.data : null) || info.message
       )
-      await this.transformFiles()
       this.stop()
     },
     onUpload (type) {
@@ -376,12 +377,8 @@ export default {
         fd.append('data', JSON.stringify(fileData))
 
         const payload = {
-          url: `${this.baseUrl}/files`,
-          body: fd,
-          headers: {
-            // 'X-Requested-With': 'XMLHttpRequest',
-            // "Content-Type": "multipart/form-data"
-          }
+          url: `${this.restUrl}/files`,
+          body: fd
         }
 
         console.log(payload)
@@ -413,7 +410,7 @@ export default {
         })
     },
     async fetchFiles () {
-      const url = `${this.baseUrl}/files`
+      const url = `${this.restUrl}/files`
       await this.getRequest({ url })
         .then(res => {
           this.files['A_1'] = res.data
@@ -422,48 +419,6 @@ export default {
           this.onFailed(err)
           console.error('filefetch: ', err)
         })
-    },
-    async transformFiles () {
-      // FIXME: replace logic
-      // const gqlFiles = await this.fetchFiles()
-      // console.log('gqlFiles: ', gqlFiles)
-
-      // if (!gqlFiles) return
-
-      // const { files, loadedFiles } = this
-
-      // for (const file of gqlFiles) {
-      //   const meta = JSON.parse(file.meta)
-      //   const { gpath, key, id } = meta
-      //   const idx = this.orderType === 'supportingDocs' ? 1 : 2
-      //   const fileFolder = this.typeName2Id(gpath.split('/')[idx].trim())
-      //   if (!this.show.includes(fileFolder)) continue // skip files accordingly
-      //   if (this.loadedFiles.includes(key || id)) continue // skip files accordingly
-
-      //   const {
-      //     name,
-      //     createdTime,
-      //     modifiedTime,
-      //     size,
-      //     thumbnailLink,
-      //     webContentLink,
-      //     iconLink
-      //   } = meta
-
-      //   files[fileFolder].push({
-      //     id,
-      //     webContentLink,
-      //     thumbnailLink,
-      //     iconLink,
-      //     fileName: name,
-      //     fileCreated: moment(createdTime).format('ll'),
-      //     fileUpdated: moment(modifiedTime).format('ll'),
-      //     fileSize: formatBytes(size),
-      //     meta
-      //   })
-
-      //   loadedFiles.push(key || id)
-      // }
     },
     async deleteFile (row, type) {
       this.$q

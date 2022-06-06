@@ -1,11 +1,11 @@
 version: "3.9"
 
 services:
-  userv_backend:
+  backend:
     build: .
-    container_name: userv_backend
+    container_name: backend
     ports:
-      - "80:80"
+      - "8001:8001"
     depends_on:
       - "backend_db"
       - "rabbitmq"
@@ -17,6 +17,8 @@ services:
       - SECRET_KEY=e9629f658c37859ab9d74680a3480b99265c7d4c89224280cb44a255c320661f
       - TOKEN=szdp79a2kz4wh12345uqu4sz6qeth8m3
       - FILES_PATH=media
+      - PORT=8001
+
 
   rabbitmq:
     image: "rabbitmq:3-management"

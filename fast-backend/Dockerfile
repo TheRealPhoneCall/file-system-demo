@@ -7,4 +7,5 @@ RUN pip3 install -r /tmp/pip-tmp/requirements.txt && rm -rf /tmp/pip-tmp
 
 # Add source code and set working directory
 ADD ./app /app/app
+EXPOSE 8001
 WORKDIR /app
