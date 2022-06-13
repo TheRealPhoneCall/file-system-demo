@@ -9,6 +9,8 @@ services:
     volumes:
       - ./quasar-frontend:/frontend
       - frontend_dist:/frontend/dist/spa
+    ports:
+      - 8080:8080
     depends_on:
       - backend
   backend:
@@ -24,7 +26,7 @@ services:
       - backend_db
       - rabbitmq
     environment:
-      - ROOT_PATH=/fast-backend
+      - ROOT_PATH=/
       - MAX_WORKERS=1
       - REDIS_SERVICE=backend_db
       - SERVICE_NAME=Backend Microservice

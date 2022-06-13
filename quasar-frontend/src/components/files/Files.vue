@@ -26,30 +26,8 @@
                 :dense="!$q.screen.gt.xs"
                 no-caps
               />
-              <!-- <q-btn
-                :label="$q.screen.gt.xs ? 'Download All' : null"
-                color="black"
-                icon="system_update_alt"
-                @click="
-                  setLoading(type.id, true)
-                  jszip(
-                    files[type.id],
-                    `${orderId} - ${type.name}.zip`,
-                    dlCallback
-                  )
-                "
-                :disable="
-                  !permissions.includes('downloadAll') ||
-                  !files[type.id].length ||
-                  loading[type.id]
-                "
-                flat
-                :dense="!$q.screen.gt.xs"
-                no-caps
-              /> -->
               <q-menu
                 auto-close
-                :offset="[0, 0]"
                 icon="settings"
                 :label="$q.screen.gt.xs ? 'Settings' : null"
               >

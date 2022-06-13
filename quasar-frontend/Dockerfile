@@ -15,6 +15,6 @@ COPY yarn.lock .
 RUN yarn
 COPY . .
 
-# EXPOSE 8080
-# CMD [ "http-server", "dist/spa" ]
-RUN quasar build
+EXPOSE 8080
+CMD [ "quasar", "dev" ]
+# RUN quasar dev
